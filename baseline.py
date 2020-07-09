@@ -20,6 +20,8 @@ import solaris as sol
 
 import model
 
+# Функция: Создает новую пустую папку (замещая старую, если она есть)
+# Вход: path - строка, путь к папке
 def makeemptyfolder(path):
     """
     Create an empty folder, deleting anything there already
@@ -27,7 +29,9 @@ def makeemptyfolder(path):
     shutil.rmtree(path, ignore_errors=True)
     pathlib.Path(path).mkdir(exist_ok=True)
 
-
+# Функция: Читает из CSV в DataFrame информации о местоположении
+# Вход: path - строка, путь к CSV-файлу с информацией
+# Выход: rotationdf - DataFrame с информацией о местоположении
 def readrotationfile(path):
     """
     Reads SAR_orientations file, which lists whether each strip was imaged
@@ -41,7 +45,12 @@ def readrotationfile(path):
     rotationdf['direction'] = rotationdf['direction'].astype(int)
     return rotationdf
 
-
+# Функция: Возвращает местоположение выбранного участка карты
+# Вход:
+# tilepath - строка, путь к "тайлу" (изображению части карты?)
+# rotationdf - DataFrame c местоположениями.
+# Выход:
+# rotation - местоположение (тип?)
 def lookuprotation(tilepath, rotationdf):
     """
     Looks up the SAR_orientations value for a tile based on its filename
@@ -51,7 +60,12 @@ def lookuprotation(tilepath, rotationdf):
     rotation = rotationdf.loc[stripname].squeeze()
     return rotation
 
-
+# Функция: Копирует TIFF изображение (может скопированное изображение перевернуть, а исходное удалить)
+# Вход:
+# srcpath - строка, путь к файлу исходного изображения
+# dstpath - строка, путь к файлу создаваемого изображения
+# rotate - флаг, если установлен - изображение переворачивается
+# deletesource - флаг, если установлен - исходный файл удаляется
 def copyrotateimage(srcpath, dstpath, rotate=False, deletesource=False):
     """
     Copying with rotation:  Copies a TIFF image from srcpath to dstpath,
@@ -86,7 +100,12 @@ def copyrotateimage(srcpath, dstpath, rotate=False, deletesource=False):
     if deletesource:
         os.remove(srcpath)
 
-
+# Функция: Копирует или перемещает исходноге изображение, изменяя порядок (а также количество) наложения цветовых каналов
+# Вход:
+# srcpath - строка, путь к исходному изображению
+# dstpath - строка, путь к получаемому изображению
+# bandlist - список из целых чисел, номера групп растров.
+# deletesource - флаг, если установлен - удаление исходного изображения
 def reorderbands(srcpath, dstpath, bandlist, deletesource=False):
     """
     Copies a TIFF image from srcpath to dstpath, reordering the bands.
@@ -118,7 +137,8 @@ def reorderbands(srcpath, dstpath, bandlist, deletesource=False):
     if deletesource:
         os.remove(srcpath)
 
-
+# Функция: Создает, копирует и сортирует все папки и файлы перед "обучением" модели
+# Вход: аргументы командной строки(флаги, пути к файлам и каталогам)
 def pretrain(args):
     """
     Creates rotated versions of imagery used for training
@@ -249,7 +269,8 @@ optical_dict = {
     'arch': model.UNet11
 }
 
-
+# Функция: Определяет yaml-файл с настройками
+# Вход: Аргументы командной строки
 def defineyaml(args):
     #YAML
     yamlcontents = """
@@ -478,7 +499,8 @@ training:
     yamlfile.write(yamlcontents)
     yamlfile.close()
 
-
+# Функция: Обучение модели
+# Вход: Аргументы командной строки
 def train(args):
     """
     Trains the model.
@@ -568,9 +590,10 @@ def pretest(args):
     #Write reference CSVs for testing
     testdf.to_csv(args.testcsv, index=False)
 
+#  
 def test(args):
     """
-    Uses the trained model to conduct inference on the test dataset.
+    Uses the trained model to conduct inference onкстров the test dataset.
     Outputs are a continuously-varying pixel map, a binary pixel map,
     and a CSV file of vector labels for evaluation.
     """
