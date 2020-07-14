@@ -26,8 +26,8 @@ def makeemptyfolder(path):
     """
     Create an empty folder, deleting anything there already
     """
-    shutil.rmtree(path, ignore_errors=True)
-    pathlib.Path(path).mkdir(exist_ok=True)
+    shutil.rmtree(path, ignore_errors=True);
+    pathlib.Path(path).mkdir(exist_ok=True);
 
 # Функция: Читает из CSV в DataFrame информации о местоположении
 # Вход: path - строка, путь к CSV-файлу с информацией
@@ -41,9 +41,9 @@ def readrotationfile(path):
                              sep=' ',
                              index_col=0,
                              names=['strip', 'direction'],
-                             header=None)
-    rotationdf['direction'] = rotationdf['direction'].astype(int)
-    return rotationdf
+                             header=None);
+    rotationdf['direction'] = rotationdf['direction'].astype(int);
+    return rotationdf;
 
 # Функция: Возвращает местоположение выбранного участка карты
 # Вход:
@@ -55,10 +55,10 @@ def lookuprotation(tilepath, rotationdf):
     """
     Looks up the SAR_orientations value for a tile based on its filename
     """
-    tilename = os.path.splitext(os.path.basename(tilepath))[0]
-    stripname = '_'.join(tilename.split('_')[-4:-2])
-    rotation = rotationdf.loc[stripname].squeeze()
-    return rotation
+    tilename = os.path.splitext(os.path.basename(tilepath))[0];
+    stripname = '_'.join(tilename.split('_')[-4:-2]);
+    rotation = rotationdf.loc[stripname].squeeze();
+    return rotation;
 
 # Функция: Копирует TIFF изображение (может скопированное изображение перевернуть, а исходное удалить)
 # Вход:
@@ -75,30 +75,30 @@ def copyrotateimage(srcpath, dstpath, rotate=False, deletesource=False):
     if srcpath==dstpath:
         if not rotate:
             #Then there's nothing to do
-            return
+            return;
         else:
             #Move file to temporary location before continuing
-            srcpath = srcpath + str(uuid.uuid4())
-            shutil.move(dstpath, srcpath)
-            deletesource = True
+            srcpath = srcpath + str(uuid.uuid4());
+            shutil.move(dstpath, srcpath);
+            deletesource = True;
 
     if not rotate:
-        shutil.copy(srcpath, dstpath, follow_symlinks=True)
+        shutil.copy(srcpath, dstpath, follow_symlinks=True);
     else:
-        driver = gdal.GetDriverByName('GTiff')
-        tilefile = gdal.Open(srcpath)
-        copyfile = driver.CreateCopy(dstpath, tilefile, strict=0)
-        numbands = copyfile.RasterCount
+        driver = gdal.GetDriverByName('GTiff'); # Растровый "драйвер" для работы с расширением "GeoTIFF"
+        tilefile = gdal.Open(srcpath); # Открывает файл с куском карты
+        copyfile = driver.CreateCopy(dstpath, tilefile, strict=0); # Создает копию но не "1 в 1"
+        numbands = copyfile.RasterCount; # Количество цветовых каналов (1 - изображение черно-белое, 3 - RGB)
         for bandnum in range(1, numbands+1):
-            banddata = tilefile.GetRasterBand(bandnum).ReadAsArray()
-            banddata = np.fliplr(np.flipud(banddata)) #180 deg rotation
-            copyfile.GetRasterBand(bandnum).WriteArray(banddata)
-        copyfile.FlushCache()
-        copyfile = None
-        tilefile = None
+            banddata = tilefile.GetRasterBand(bandnum).ReadAsArray();
+            banddata = np.fliplr(np.flipud(banddata)); #180 deg rotation
+            copyfile.GetRasterBand(bandnum).WriteArray(banddata);
+        copyfile.FlushCache();
+        copyfile = None;
+        tilefile = None;
 
     if deletesource:
-        os.remove(srcpath)
+        os.remove(srcpath);
 
 # Функция: Копирует или перемещает исходноге изображение, изменяя порядок (а также количество) наложения цветовых каналов
 # Вход:
@@ -113,29 +113,29 @@ def reorderbands(srcpath, dstpath, bandlist, deletesource=False):
     #Handles special case where source path and destination path are the same
     if srcpath==dstpath:
         #Move file to temporary location before continuing
-        srcpath = srcpath + str(uuid.uuid4())
-        shutil.move(dstpath, srcpath)
-        deletesource = True
+        srcpath = srcpath + str(uuid.uuid4());
+        shutil.move(dstpath, srcpath);
+        deletesource = True;
 
-    driver = gdal.GetDriverByName('GTiff')
-    tilefile = gdal.Open(srcpath)
-    geotransform = tilefile.GetGeoTransform()
-    projection = tilefile.GetProjection()
-    numbands = len(bandlist)
-    shape = tilefile.GetRasterBand(1).ReadAsArray().shape
+    driver = gdal.GetDriverByName('GTiff');
+    tilefile = gdal.Open(srcpath);
+    geotransform = tilefile.GetGeoTransform();
+    projection = tilefile.GetProjection();
+    numbands = len(bandlist);
+    shape = tilefile.GetRasterBand(1).ReadAsArray().shape;
     copyfile = driver.Create(dstpath, shape[1], shape[0],
-                             numbands, gdal.GDT_Byte)
+                             numbands, gdal.GDT_Byte);
     for bandnum in range(1, numbands+1):
-        banddata = tilefile.GetRasterBand(bandlist[bandnum-1]).ReadAsArray()
-        copyfile.GetRasterBand(bandnum).WriteArray(banddata)
-    copyfile.SetGeoTransform(geotransform)
-    copyfile.SetProjection(projection)
-    copyfile.FlushCache()
-    copyfile = None
-    tilefile = None
+        banddata = tilefile.GetRasterBand(bandlist[bandnum-1]).ReadAsArray();
+        copyfile.GetRasterBand(bandnum).WriteArray(banddata);
+    copyfile.SetGeoTransform(geotransform);
+    copyfile.SetProjection(projection);
+    copyfile.FlushCache();
+    copyfile = None;
+    tilefile = None;
 
     if deletesource:
-        os.remove(srcpath)
+        os.remove(srcpath);
 
 # Функция: Создает, копирует и сортирует все папки и файлы перед "обучением" модели
 # Вход: аргументы командной строки(флаги, пути к файлам и каталогам)
@@ -146,39 +146,39 @@ def pretrain(args):
     mimic SAR bands.
     """
     print('Pretrain')
-    assert(args.sardir is not None and args.labeldir is not None and args.maskdir is not None and args.sarprocdir is not None)
+    assert(args.sardir is not None and args.labeldir is not None and args.maskdir is not None and args.sarprocdir is not None);
 
     #Save local copy of rotation file
     if args.rotate:
-        shutil.copy(args.rotationfile, args.rotationfilelocal, follow_symlinks=True)
+        shutil.copy(args.rotationfile, args.rotationfilelocal, follow_symlinks=True);
 
     #Get paths to relevant files
-    sarpaths = glob.glob(os.path.join(args.sardir, '*.tif'))
-    sarpaths.sort()
-    labelpaths = glob.glob(os.path.join(args.labeldir, '*.geojson'))
-    labelpaths.sort()
-    maskpaths = [os.path.join(args.maskdir, os.path.basename(sarpath)) for sarpath in sarpaths]
-    sarprocpaths = [os.path.join(args.sarprocdir, os.path.basename(sarpath)) for sarpath in sarpaths]
+    sarpaths = glob.glob(os.path.join(args.sardir, '*.tif'));
+    sarpaths.sort();
+    labelpaths = glob.glob(os.path.join(args.labeldir, '*.geojson'));
+    labelpaths.sort();
+    maskpaths = [os.path.join(args.maskdir, os.path.basename(sarpath)) for sarpath in sarpaths];
+    sarprocpaths = [os.path.join(args.sarprocdir, os.path.basename(sarpath)) for sarpath in sarpaths];
     if args.opticaldir is not None:
-        opticalpaths = glob.glob(os.path.join(args.opticaldir, '*.tif'))
-        opticalpaths.sort()
-        opticalprocpaths = [os.path.join(args.opticalprocdir, os.path.basename(opticalpath)) for opticalpath in opticalpaths]
+        opticalpaths = glob.glob(os.path.join(args.opticaldir, '*.tif'));
+        opticalpaths.sort();
+        opticalprocpaths = [os.path.join(args.opticalprocdir, os.path.basename(opticalpath)) for opticalpath in opticalpaths];
     else:
-        opticalpaths = [''] * len(sarpaths)
-        opticalprocpaths = [''] * len(sarpaths)
+        opticalpaths = [''] * len(sarpaths);
+        opticalprocpaths = [''] * len(sarpaths);
 
     #Create empty folders to hold masks, processed SAR, & processed optical
-    folders = [args.maskdir, args.sarprocdir]
+    folders = [args.maskdir, args.sarprocdir];
     if args.opticalprocdir is not None:
-        folders.append(args.opticalprocdir)
+        folders.append(args.opticalprocdir);
     for folder in folders:
-        makeemptyfolder(folder)
-    pathlib.Path(args.modeldir).mkdir(exist_ok=True)
+        makeemptyfolder(folder);
+    pathlib.Path(args.modeldir).mkdir(exist_ok=True);
 
     #Look up how to rotate masks and images, if enabled
     if args.rotate:
-        assert(args.rotationfilelocal is not None)
-        rotationdf = readrotationfile(args.rotationfilelocal)
+        assert(args.rotationfilelocal is not None);
+        rotationdf = readrotationfile(args.rotationfilelocal);
 
     #Create masks, with optional rotation and optional size threshold
     #Also copy SAR and optical imagery to local folder, with optional rotation
@@ -187,71 +187,71 @@ def pretrain(args):
     combodf = pd.DataFrame(columns=['opticalimage',
                                     'sarimage',
                                     'label',
-                                    'group'])
-    ledge = 591550 #Approximate west edge of training data area
-    redge = 596250 #Approximate east edge of training data area
-    numgroups = 5
-    reorganizeoptical = True
+                                    'group']);
+    ledge = 591550; #Approximate west edge of training data area
+    redge = 596250; #Approximate east edge of training data area
+    numgroups = 5;
+    reorganizeoptical = True;
     for i, (sarpath, opticalpath, labelpath, maskpath, sarprocpath, opticalprocpath) in tqdm.tqdm(enumerate(zip(sarpaths, opticalpaths, labelpaths, maskpaths, sarprocpaths, opticalprocpaths)), total=len(sarpaths)):
         #Generate mask
-        gdf = gpd.read_file(labelpath)
+        gdf = gpd.read_file(labelpath);
         if args.mintrainsize is not None:
-            cut = gdf.area > float(args.mintrainsize)
-            gdf = gdf.loc[cut]
+            cut = gdf.area > float(args.mintrainsize);
+            gdf = gdf.loc[cut];
         maskdata = sol.vector.mask.footprint_mask(
             df=gdf,
             reference_im=sarpath,
             out_file=maskpath
-        )
+        );
         #Optionally rotate mask
         if args.rotate:
-            rotationflag = lookuprotation(sarpath, rotationdf)
+            rotationflag = lookuprotation(sarpath, rotationdf);
         else:
-            rotationflag = 0
+            rotationflag = 0;
         if rotationflag==1:
-            copyrotateimage(maskpath, maskpath, rotate=True)
+            copyrotateimage(maskpath, maskpath, rotate=True);
         #Copy SAR and optical imagery, with optional rotation
-        rotationflagbool = rotationflag == 1
-        copyrotateimage(sarpath, sarprocpath, rotate=rotationflagbool)
+        rotationflagbool = rotationflag == 1;
+        copyrotateimage(sarpath, sarprocpath, rotate=rotationflagbool);
         if args.opticaldir is not None:
             copyrotateimage(opticalpath, opticalprocpath,
-                            rotate=rotationflagbool)
+                            rotate=rotationflagbool);
             if reorganizeoptical:
-                reorderbands(opticalprocpath, opticalprocpath, [3,1,1,2])
+                reorderbands(opticalprocpath, opticalprocpath, [3,1,1,2]);
 
         #Assign the tile to one of a small number of groups, for setting
         #aside validation data (or for k-fold cross-validation, not used here).
         #Caveats: These groups slightly overlap each other.  Also, they are
         #not of equal size.
-        sarfile = gdal.Open(sarpath)
-        sartransform = sarfile.GetGeoTransform()
-        sarx = sartransform[0]
-        groupnum = min(numgroups-1, max(0, math.floor((sarx-ledge) / (redge-ledge) * numgroups)))
+        sarfile = gdal.Open(sarpath);
+        sartransform = sarfile.GetGeoTransform();
+        sarx = sartransform[0];
+        groupnum = min(numgroups-1, max(0, math.floor((sarx-ledge) / (redge-ledge) * numgroups)));
         combodf = combodf.append({
             'sarimage': sarprocpath,
             'opticalimage': opticalprocpath,
             'label': maskpath,
-            'group': groupnum}, ignore_index=True)
+            'group': groupnum}, ignore_index=True);
 
         #Optionally end loop early (for debugging purposes)
         if args.earlycutoff is not None:
             if i >= int(args.earlycutoff) - 1:
-                break
+                break;
 
     #Write reference CSVs for training
     for i in range(numgroups+1):
-        print( '%i: %i' % (i, len(combodf[combodf['group']==i])))
-    validationgroup = numgroups - 1
-    traindf = combodf[combodf['group'] != validationgroup]
-    validdf = combodf[combodf['group'] == validationgroup]
-    sartraindf = traindf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'})
-    sarvaliddf = validdf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'})
-    opticaltraindf = traindf.loc[:, ['opticalimage', 'label']].rename(columns={'opticalimage':'image'})
-    opticalvaliddf = validdf.loc[:, ['opticalimage', 'label']].rename(columns={'opticalimage':'image'})
-    sartraindf.to_csv(args.traincsv, index=False)
-    sarvaliddf.to_csv(args.validcsv, index=False)
-    opticaltraindf.to_csv(args.opticaltraincsv, index=False)
-    opticalvaliddf.to_csv(args.opticalvalidcsv, index=False)
+        print( '%i: %i' % (i, len(combodf[combodf['group']==i])));
+    validationgroup = numgroups - 1;
+    traindf = combodf[combodf['group'] != validationgroup];
+    validdf = combodf[combodf['group'] == validationgroup];
+    sartraindf = traindf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'});
+    sarvaliddf = validdf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'});
+    opticaltraindf = traindf.loc[:, ['opticalimage', 'label']].rename(columns={'opticalimage':'image'});
+    opticalvaliddf = validdf.loc[:, ['opticalimage', 'label']].rename(columns={'opticalimage':'image'});
+    sartraindf.to_csv(args.traincsv, index=False);
+    sarvaliddf.to_csv(args.validcsv, index=False);
+    opticaltraindf.to_csv(args.opticaltraincsv, index=False);
+    opticalvaliddf.to_csv(args.opticalvalidcsv, index=False);
 
 
 #Custom model dictionaries, defined globally
@@ -375,18 +375,18 @@ inference:
   output_dir: '$TESTOUTDIR'
 """
     if args.traincsv is not None:
-        yamlcontents = yamlcontents.replace('$TRAINCSV', args.traincsv)
+        yamlcontents = yamlcontents.replace('$TRAINCSV', args.traincsv);
     if args.validcsv is not None:
-        yamlcontents = yamlcontents.replace('$VALIDCSV', args.validcsv)
+        yamlcontents = yamlcontents.replace('$VALIDCSV', args.validcsv);
     if args.testcsv is not None:
-        yamlcontents = yamlcontents.replace('$TESTCSV', args.testcsv)
+        yamlcontents = yamlcontents.replace('$TESTCSV', args.testcsv);
     if args.modeldir is not None:
-        yamlcontents = yamlcontents.replace('$MODELDIR', args.modeldir)
+        yamlcontents = yamlcontents.replace('$MODELDIR', args.modeldir);
     if args.testoutdir is not None:
-        yamlcontents = yamlcontents.replace('$TESTOUTDIR', args.testoutdir)
-    yamlfile = open(args.yamlpath, 'w')
-    yamlfile.write(yamlcontents)
-    yamlfile.close()
+        yamlcontents = yamlcontents.replace('$TESTOUTDIR', args.testoutdir);
+    yamlfile = open(args.yamlpath, 'w');
+    yamlfile.write(yamlcontents);
+    yamlfile.close();
 
 
 
@@ -491,13 +491,13 @@ training:
   verbose: true
 """
     yamlcontents = yamlcontents.replace('$OPTICALTRAINCSV',
-                                        args.opticaltraincsv)
+                                        args.opticaltraincsv);
     yamlcontents = yamlcontents.replace('$OPTICALVALIDCSV',
-                                        args.opticalvalidcsv)
-    yamlcontents = yamlcontents.replace('$MODELDIR', args.modeldir)
-    yamlfile = open(args.opticalyamlpath, 'w')
-    yamlfile.write(yamlcontents)
-    yamlfile.close()
+                                        args.opticalvalidcsv);
+    yamlcontents = yamlcontents.replace('$MODELDIR', args.modeldir);
+    yamlfile = open(args.opticalyamlpath, 'w');
+    yamlfile.write(yamlcontents);
+    yamlfile.close();
 
 # Функция: Обучение модели
 # Вход: Аргументы командной строки
@@ -505,90 +505,90 @@ def train(args):
     """
     Trains the model.
     """
-    print('Train')
+    print('Train');
     
     #Create YAML files
-    defineyaml(args)
-    defineopticalyaml(args)
+    defineyaml(args);
+    defineopticalyaml(args);
 
     #Optionally start by training on optical imagery for transfer learning
     if args.transferoptical:
-        print('Training on Optical: Start')
-        config = sol.utils.config.parse(args.opticalyamlpath)
+        print('Training on Optical: Start');
+        config = sol.utils.config.parse(args.opticalyamlpath);
         trainer = sol.nets.train.Trainer(config,
-                                         custom_model_dict=optical_dict)
-        trainer.train()
+                                         custom_model_dict=optical_dict);
+        trainer.train();
 
         #Select best-performing optical imagery model
         if not args.uselastmodel:
             modelfiles = sorted(glob.glob(os.path.join(args.modeldir,
-                                                       'opticalbest*.model')))
+                                                       'opticalbest*.model')));
             timestamps = [os.path.getmtime(modelfile)
-                          for modelfile in modelfiles]
-            latestindex = timestamps.index(max(timestamps))
-            modelfile = modelfiles[latestindex]
+                          for modelfile in modelfiles];
+            latestindex = timestamps.index(max(timestamps));
+            modelfile = modelfiles[latestindex];
         else:
-            modelfile = os.path.join(args.modeldir, 'opticallast.model')
-        print(modelfile)
-        destfile = os.path.join(args.modeldir, 'optical.model')
-        shutil.copyfile(modelfile, destfile, follow_symlinks=True)
-        print('Training on Optical: End')
+            modelfile = os.path.join(args.modeldir, 'opticallast.model');
+        print(modelfile);
+        destfile = os.path.join(args.modeldir, 'optical.model');
+        shutil.copyfile(modelfile, destfile, follow_symlinks=True);
+        print('Training on Optical: End');
 
     #Instantiate trainer and train on SAR imagery
-    config = sol.utils.config.parse(args.yamlpath)
+    config = sol.utils.config.parse(args.yamlpath);
     if args.transferoptical:
-        config['pretrained'] = True
-        sar_dict['weight_path'] = os.path.join(args.modeldir, 'optical.model')
+        config['pretrained'] = True;
+        sar_dict['weight_path'] = os.path.join(args.modeldir, 'optical.model');
     else:
-        config['pretrained'] = False
-    trainer = sol.nets.train.Trainer(config, custom_model_dict=sar_dict)
-    trainer.train()
+        config['pretrained'] = False;
+    trainer = sol.nets.train.Trainer(config, custom_model_dict=sar_dict);
+    trainer.train();
 
 
 def pretest(args):
     """
     Create rotated versions of imagery used for testing.
     """
-    print('Pretest')
-    assert(args.testdir is not None and args.testprocdir is not None)
+    print('Pretest');
+    assert(args.testdir is not None and args.testprocdir is not None);
 
     #Get paths to relevant files
-    sarpaths = glob.glob(os.path.join(args.testdir, '*.tif'))
-    sarpaths.sort()
-    sarprocpaths = [os.path.join(args.testprocdir, os.path.basename(sarpath)) for sarpath in sarpaths]
+    sarpaths = glob.glob(os.path.join(args.testdir, '*.tif'));
+    sarpaths.sort();
+    sarprocpaths = [os.path.join(args.testprocdir, os.path.basename(sarpath)) for sarpath in sarpaths];
 
     #Create empty folder to hold processed test SAR images
-    makeemptyfolder(args.testprocdir)
+    makeemptyfolder(args.testprocdir);
 
     #Look up how to rotate masks and images, if enabled
     if args.rotate:
         assert(args.rotationfilelocal is not None)
-        rotationdf = readrotationfile(args.rotationfilelocal)
+        rotationdf = readrotationfile(args.rotationfilelocal);
 
     #Copy SAR test images to local folder, with optional rotation
     #Also create Pandas dataframe of testing data
-    testdf = pd.DataFrame(columns=['image'])
+    testdf = pd.DataFrame(columns=['image']);
     for i, (sarpath, sarprocpath) in tqdm.tqdm(enumerate(zip(sarpaths, sarprocpaths)), total=len(sarpaths)):
         #Copy SAR test imagery, with optional rotation
         if args.rotate:
-            rotationflag = lookuprotation(sarpath, rotationdf)
+            rotationflag = lookuprotation(sarpath, rotationdf);
         else:
-            rotationflag = 0
-        rotationflagbool = rotationflag == 1
-        copyrotateimage(sarpath, sarprocpath, rotate=rotationflagbool)
+            rotationflag = 0;
+        rotationflagbool = rotationflag == 1;
+        copyrotateimage(sarpath, sarprocpath, rotate=rotationflagbool);
 
         #Add row to Pandas dataframe of testing data
         testdf = testdf.append({
             'image': sarprocpath
-        }, ignore_index=True)
+        }, ignore_index=True);
 
         #Optionally end loop early (for debugging purposes)
         if args.earlycutoff is not None:
             if i >= int(args.earlycutoff) - 1:
-                break
+                break;
 
     #Write reference CSVs for testing
-    testdf.to_csv(args.testcsv, index=False)
+    testdf.to_csv(args.testcsv, index=False);
 
 #  
 def test(args):
@@ -597,81 +597,81 @@ def test(args):
     Outputs are a continuously-varying pixel map, a binary pixel map,
     and a CSV file of vector labels for evaluation.
     """
-    print('Test')
+    print('Test');
 
     #Create SAR YAML file if absent
     if not os.path.exists(args.yamlpath):
-        defineyaml(args)
+        defineyaml(args);
 
     #Overwrite last model with best model
-    modelfiles = sorted(glob.glob(os.path.join(args.modeldir, 'best*.model')))
-    timestamps = [os.path.getmtime(modelfile) for modelfile in modelfiles]
-    latestindex = timestamps.index(max(timestamps))
-    modelfile = modelfiles[latestindex]
-    print(modelfile)
+    modelfiles = sorted(glob.glob(os.path.join(args.modeldir, 'best*.model')));
+    timestamps = [os.path.getmtime(modelfile) for modelfile in modelfiles];
+    latestindex = timestamps.index(max(timestamps));
+    modelfile = modelfiles[latestindex];
+    print(modelfile);
     if not args.uselastmodel:
-        destfile = os.path.join(args.modeldir, 'last.model')
-        shutil.copyfile(modelfile, destfile, follow_symlinks=True)
+        destfile = os.path.join(args.modeldir, 'last.model');
+        shutil.copyfile(modelfile, destfile, follow_symlinks=True);
 
     #Create empty folders to hold various inference outputs
-    folders = [args.testoutdir, args.testbinarydir, args.testvectordir]
+    folders = [args.testoutdir, args.testbinarydir, args.testvectordir];
     for folder in folders:
-        makeemptyfolder(folder)
+        makeemptyfolder(folder);
 
     #Run inference on the test data
-    config = sol.utils.config.parse(args.yamlpath)
-    inferer = sol.nets.infer.Inferer(config, custom_model_dict=sar_dict)
-    print('Start inference.')
-    inferer()
-    print('Finished inference.')
+    config = sol.utils.config.parse(args.yamlpath);
+    inferer = sol.nets.infer.Inferer(config, custom_model_dict=sar_dict);
+    print('Start inference.');
+    inferer();
+    print('Finished inference.');
 
     #Binary and vector inference output
-    driver = gdal.GetDriverByName('GTiff')
-    firstfile = True
-    sourcefolder = config['inference']['output_dir']
-    sourcefiles = sorted(glob.glob(os.path.join(sourcefolder, '*')))
+    driver = gdal.GetDriverByName('GTiff');
+    firstfile = True;
+    sourcefolder = config['inference']['output_dir'];
+    sourcefiles = sorted(glob.glob(os.path.join(sourcefolder, '*')));
     if args.rotate:
-        rotationdf = readrotationfile(args.rotationfilelocal)
-    minbuildingsize = float(args.mintestsize) if args.mintestsize is not None else 0
+        rotationdf = readrotationfile(args.rotationfilelocal);
+    minbuildingsize = float(args.mintestsize) if args.mintestsize is not None else 0;
     for sourcefile in tqdm.tqdm(sourcefiles, total=len(sourcefiles)):
-        filename = os.path.basename(sourcefile)
-        destfile = os.path.join(args.testbinarydir, filename)
+        filename = os.path.basename(sourcefile);
+        destfile = os.path.join(args.testbinarydir, filename);
 
         #Create binary array
-        cutoff = 0.
-        sourcedataorig = gdal.Open(sourcefile).ReadAsArray()
-        sourcedata = np.zeros(np.shape(sourcedataorig), dtype='int')
-        sourcedata[np.where(sourcedataorig > cutoff)] = 255
-        sourcedata[np.where(sourcedataorig <= cutoff)] = 0
+        cutoff = 0.;
+        sourcedataorig = gdal.Open(sourcefile).ReadAsArray();
+        sourcedata = np.zeros(np.shape(sourcedataorig), dtype='int');
+        sourcedata[np.where(sourcedataorig > cutoff)] = 255;
+        sourcedata[np.where(sourcedataorig <= cutoff)] = 0;
 
         #Remove small buildings
         if minbuildingsize>0:
-            regionlabels, regioncount = skimage.measure.label(sourcedata, background=0, connectivity=1, return_num=True)
-            regionproperties = skimage.measure.regionprops(regionlabels)
+            regionlabels, regioncount = skimage.measure.label(sourcedata, background=0, connectivity=1, return_num=True);
+            regionproperties = skimage.measure.regionprops(regionlabels);
             for bl in range(regioncount):
                 if regionproperties[bl].area < minbuildingsize:
-                    sourcedata[regionlabels == bl+1] = 0
+                    sourcedata[regionlabels == bl+1] = 0;
 
         #Save binary image
-        destdata = driver.Create(destfile, sourcedata.shape[1], sourcedata.shape[0], 1, gdal.GDT_Byte)
-        destdata.GetRasterBand(1).WriteArray(sourcedata)
-        del destdata
+        destdata = driver.Create(destfile, sourcedata.shape[1], sourcedata.shape[0], 1, gdal.GDT_Byte);
+        destdata.GetRasterBand(1).WriteArray(sourcedata);
+        del destdata;
 
         #Rotate source data back to real-world orientation before vectorizing
         if args.rotate:
-            rotationflag = lookuprotation(filename, rotationdf)
+            rotationflag = lookuprotation(filename, rotationdf);
         else:
             rotationflag = 0
-        rotationflagbool = rotationflag == 1
+        rotationflagbool = rotationflag == 1;
         if rotationflag:
-            sourcedatarotated = np.fliplr(np.flipud(sourcedata))
+            sourcedatarotated = np.fliplr(np.flipud(sourcedata));
         else:
-            sourcedatarotated = sourcedata
+            sourcedatarotated = sourcedata;
 
         #Save vector file (CSV)
-        vectorname = '.'.join(filename.split('.')[:-1]) + '.csv'
-        vectorfile = os.path.join(args.testvectordir, vectorname)
-        referencefile = os.path.join(args.testprocdir, filename)
+        vectorname = '.'.join(filename.split('.')[:-1]) + '.csv';
+        vectorfile = os.path.join(args.testvectordir, vectorname);
+        referencefile = os.path.join(args.testprocdir, filename);
         vectordata = sol.vector.mask.mask_to_poly_geojson(
             sourcedatarotated,
             output_path=vectorfile,
@@ -680,23 +680,23 @@ def test(args):
             bg_threshold=128,
             do_transform=False,
             simplify=True
-        )
+        );
 
         #Add to the cumulative inference CSV file
-        tilename = '_'.join(os.path.splitext(filename)[0].split('_')[-4:])
+        tilename = '_'.join(os.path.splitext(filename)[0].split('_')[-4:]);
         csvaddition = pd.DataFrame({'ImageId': tilename,
                                     'BuildingId': 0,
                                     'PolygonWKT_Pix': vectordata['geometry'],
                                     'Confidence': 1
-        })
-        csvaddition['BuildingId'] = range(len(csvaddition))
+        });
+        csvaddition['BuildingId'] = range(len(csvaddition));
         if firstfile:
-            proposalcsv = csvaddition
-            firstfile = False
+            proposalcsv = csvaddition;
+            firstfile = False;
         else:
-            proposalcsv = proposalcsv.append(csvaddition)
+            proposalcsv = proposalcsv.append(csvaddition);
 
-    proposalcsv.to_csv(args.outputcsv, index=False)
+    proposalcsv.to_csv(args.outputcsv, index=False);
 
 
 def evaluation(args):
@@ -723,89 +723,89 @@ def evaluation(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SpaceNet 6 Baseline Algorithm')
+    parser = argparse.ArgumentParser(description='SpaceNet 6 Baseline Algorithm');
     #Which operations to carry out
     parser.add_argument('--pretrain', action='store_true',
-                        help='Whether to format training data')
+                        help='Whether to format training data');
     parser.add_argument('--train', action='store_true',
-                        help='Whether to train model')
+                        help='Whether to train model');
     parser.add_argument('--pretest', action='store_true',
-                        help='Whether to format testing data')
+                        help='Whether to format testing data');
     parser.add_argument('--test', action='store_true',
-                        help='Whether to test model')
+                        help='Whether to test model');
     parser.add_argument('--eval', action='store_true',
-                        help='Whether to evaluate test output')
+                        help='Whether to evaluate test output');
     #Training: Input file paths
     parser.add_argument('--sardir',
-                        help='Folder of SAR training imagery files')
+                        help='Folder of SAR training imagery files');
     parser.add_argument('--opticaldir',
-                        help='Folder of optical imagery files')
+                        help='Folder of optical imagery files');
     parser.add_argument('--labeldir',
-                        help='Folder of building footprint vector files')
+                        help='Folder of building footprint vector files');
     parser.add_argument('--rotationfile',
-                        help='File of data acquisition directions')
+                        help='File of data acquisition directions');
     #Training: Preprocessed file paths
     parser.add_argument('--rotationfilelocal',
-                        help='Where to save a copy of directions file')
+                        help='Where to save a copy of directions file');
     parser.add_argument('--maskdir',
-                        help='Where to save building footprint masks')
+                        help='Where to save building footprint masks');
     parser.add_argument('--sarprocdir',
-                        help='Where to save preprocessed SAR training files')
+                        help='Where to save preprocessed SAR training files');
     parser.add_argument('--opticalprocdir',
-                        help='Where to save preprocessed optical image files')
+                        help='Where to save preprocessed optical image files');
     #Training and inference: YAML and Reference CSV file paths
     parser.add_argument('--traincsv',
-                        help='Where to save reference CSV of training data')
+                        help='Where to save reference CSV of training data');
     parser.add_argument('--validcsv',
-                        help='Where to save reference CSV of validation data')
+                        help='Where to save reference CSV of validation data');
     parser.add_argument('--opticaltraincsv',
-                        help='Where to save CSV of optical training data')
+                        help='Where to save CSV of optical training data');
     parser.add_argument('--opticalvalidcsv',
-                        help='Where to save CSV of optical validation data')
+                        help='Where to save CSV of optical validation data');
     parser.add_argument('--testcsv',
-                        help='Where to save reference CSV of testing data')
+                        help='Where to save reference CSV of testing data');
     parser.add_argument('--yamlpath',
-                        help='Where to save YAML file')
+                        help='Where to save YAML file');
     parser.add_argument('--opticalyamlpath',
-                        help='Where to save transfer learning YAML file')
+                        help='Where to save transfer learning YAML file');
     #Training and inference: Model weights file path
     parser.add_argument('--modeldir',
-                        help='Where to save model weights')
+                        help='Where to save model weights');
     #Inference (testing) file paths
     parser.add_argument('--testdir',
-                        help='Folder of SAR testing imagery files')
+                        help='Folder of SAR testing imagery files');
     parser.add_argument('--testprocdir',
-                        help='Where to save preprocessed SAR testing files')
+                        help='Where to save preprocessed SAR testing files');
     parser.add_argument('--testoutdir',
-                        help='Where to save test continuous segmentation maps')
+                        help='Where to save test continuous segmentation maps');
     parser.add_argument('--testbinarydir',
-                        help='Where to save test binary segmentation maps')
+                        help='Where to save test binary segmentation maps');
     parser.add_argument('--testvectordir',
-                        help='Where to save test vector label output')
+                        help='Where to save test vector label output');
     parser.add_argument('--outputcsv',
-                        help='Where to save labels inferred from test data')
+                        help='Where to save labels inferred from test data');
     #Algorithm settings
     parser.add_argument('--rotate', action='store_true',
-                        help='Rotate tiles to align imaging direction')
+                        help='Rotate tiles to align imaging direction');
     parser.add_argument('--transferoptical', action='store_true',
-                        help='Train model on optical before training on SAR')
+                        help='Train model on optical before training on SAR');
     parser.add_argument('--mintrainsize',
-                        help='Minimum building size (m^2) for training')
+                        help='Minimum building size (m^2) for training');
     parser.add_argument('--mintestsize',
-                        help='Minimum size to output during testing')
+                        help='Minimum size to output during testing');
     parser.add_argument('--uselastmodel', action='store_true',
-                        help='Do not overwrite last model with best model')
+                        help='Do not overwrite last model with best model');
     parser.add_argument('--earlycutoff',
-                        help='Limit tiles used, for debugging purposes')
-    args = parser.parse_args(sys.argv[1:])
+                        help='Limit tiles used, for debugging purposes');
+    args = parser.parse_args(sys.argv[1:]);
 
     if args.pretrain:
-        pretrain(args)
+        pretrain(args);
     if args.train:
-        train(args)
+        train(args);
     if args.pretest:
-        pretest(args)
+        pretest(args);
     if args.test:
-        test(args)
+        test(args);
     if args.eval:
-        evaluation(args)
+        evaluation(args);
