@@ -4,10 +4,10 @@ import os
 import sys
 import glob
 import math
-import uuid
-import shutil
-import pathlib
-import argparse
+import uuid # Для создания случайного названия временного файла
+import shutil # Для обработки файлов и каталогов
+import pathlib # Используется для создания такой же директории
+import argparse 
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -55,7 +55,7 @@ def lookuprotation(tilepath, rotationdf):
     """
     Looks up the SAR_orientations value for a tile based on its filename
     """
-    tilename = os.path.splitext(os.path.basename(tilepath))[0];
+    tilename = os.path.splitext(os.path.basename(tilepath))[0];#TODO: здесь надо бы узнать для чего все это
     stripname = '_'.join(tilename.split('_')[-4:-2]);
     rotation = rotationdf.loc[stripname].squeeze();
     return rotation;
@@ -150,7 +150,7 @@ def pretrain(args):
 
     #Save local copy of rotation file
     if args.rotate:
-        shutil.copy(args.rotationfile, args.rotationfilelocal, follow_symlinks=True);
+        shutil.copy(args.rotationfile, args.rotationfilelocal, follow_symlinks=True); #Если ссылка, то копирует то, на что она ссылается
 
     #Get paths to relevant files
     sarpaths = glob.glob(os.path.join(args.sardir, '*.tif'));
@@ -163,7 +163,7 @@ def pretrain(args):
         opticalpaths = glob.glob(os.path.join(args.opticaldir, '*.tif'));
         opticalpaths.sort();
         opticalprocpaths = [os.path.join(args.opticalprocdir, os.path.basename(opticalpath)) for opticalpath in opticalpaths];
-    else:
+    else: # 
         opticalpaths = [''] * len(sarpaths);
         opticalprocpaths = [''] * len(sarpaths);
 
@@ -242,7 +242,7 @@ def pretrain(args):
     for i in range(numgroups+1):
         print( '%i: %i' % (i, len(combodf[combodf['group']==i])));
     validationgroup = numgroups - 1;
-    traindf = combodf[combodf['group'] != validationgroup];
+    traindf = combodf[combodf['group'] != validationgroup];#TODO: ЗДесь надо по строчкам
     validdf = combodf[combodf['group'] == validationgroup];
     sartraindf = traindf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'});
     sarvaliddf = validdf.loc[:, ['sarimage', 'label']].rename(columns={'sarimage':'image'});
@@ -515,8 +515,8 @@ def train(args):
     if args.transferoptical:
         print('Training on Optical: Start');
         config = sol.utils.config.parse(args.opticalyamlpath);
-        trainer = sol.nets.train.Trainer(config,
-                                         custom_model_dict=optical_dict);
+        trainer = sol.nets.train.Trainer(config, #Информация из YAML-файла
+                                         custom_model_dict=optical_dict); #Выбранная модель обучения
         trainer.train();
 
         #Select best-performing optical imagery model
